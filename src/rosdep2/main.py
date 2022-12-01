@@ -334,6 +334,15 @@ def _rosdep_main(args):
                            'are found to be catkin or ament packages anywhere in the '
                            'ROS_PACKAGE_PATH, AMENT_PREFIX_PATH or in any of the directories '
                            'given by the --from-paths option.')
+    parser.add_option('--resolve-dependencies', '--resolve-deps',
+                      dest='resolve_src', default=False, action='store_true',
+                      help="Affects the 'check', 'install', and 'keys' verbs. "
+                           'If specified then rosdep will resolve dependencies that '
+                           'are found to be catkin or ament packages anywhere in the '
+                           'ROS_PACKAGE_PATH, AMENT_PREFIX_PATH or in any of the directories '
+                           'given by the --from-paths option. This effectively runs rosdep'
+                           '<verb> on all installed packages, which may find dependencies'
+                           'which are not strictly required')
     parser.add_option('--skip-keys',
                       dest='skip_keys', action='append', default=[],
                       help="Affects the 'check' and 'install' verbs. The "
@@ -511,8 +520,8 @@ def _package_args_handler(command, parser, options, args):
     if not_found:
         raise rospkg.ResourceNotFound(not_found[0], rospack.get_ros_paths())
 
-    # Handle the --ignore-src option
-    if command in ['install', 'check', 'keys'] and options.ignore_src:
+    # Handle the --ignore-src or --resolve-src option by populating the workspace packages
+    if command in ['install', 'check', 'keys'] and (options.ignore_src or options.resolve_src):
         if options.verbose:
             print('Searching ROS_PACKAGE_PATH for '
                   'sources: ' + str(os.environ['ROS_PACKAGE_PATH'].split(os.pathsep)))
@@ -551,6 +560,9 @@ def _package_args_handler(command, parser, options, args):
         # possible with empty stacks
         print('No packages in arguments, aborting')
         return
+
+    if options.resolve_src:
+        packages = lookup.append_catkin_dependencies(packages, options.verbose)
 
     return command_handlers[command](lookup, packages, options)
 

@@ -660,3 +660,17 @@ class RosdepLookup(object):
                 retval.append((view_name, entry.origin))
 
         return retval
+
+
+    def append_catkin_dependencies(self, resources, verbose=False):
+        workspace_pkgs = catkin_packages.get_workspace_packages()
+        if not workspace_pkgs:
+            return rosdep_keys
+        for resource in resources:
+            rosdep_keys = self.get_rosdeps(resource, implicit=False)
+            for rosdep_key in rosdep_keys:
+                if rosdep_key in workspace_pkgs and rosdep_key not in resources:
+                    resources.append(rosdep_key)
+                    if verbose:
+                        print("resource '{0}' has dependency '{1}' in the workspace. Resource list is now: {2}".format(resource, rosdep_key, resources), file=sys.stderr)
+        return resources
